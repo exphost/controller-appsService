@@ -70,6 +70,62 @@ def test_get_app(app):
     assert expected == get_app
 
 
+def test_get_app_version(app):
+    get_app = app.dao.get_app(org="test-org", app="app1", version="v1.2.3")
+    expected = {
+        'name': 'app1',
+        'org': 'test-org',
+        'config': {
+            'domain': 'example.com'
+        },
+        'components': {
+            'frontend': {
+                'helm': {
+                    'type': 'simple'
+                },
+                'version': 'v0.0.3',
+                'dockerfile':                 {
+                    'type': 'react',
+                },
+                'config': {
+                    'hostnames': [
+                        'www',
+                    ]
+                },
+            },
+            'backend': {
+                'helm': {
+                    'type': 'simple'
+                },
+                'version': 'v0.0.4',
+                'dockerfile': {
+                    'type': 'python',
+                },
+                'config': {
+                    'hostnames': [
+                        'api',
+                    ],
+                },
+            },
+            'backend2': {
+                'helm': {
+                    'type': 'custom'
+                },
+                'version': 'v0.0.5',
+                'dockerfile': {
+                    'type': 'custom',
+                },
+                'config': {
+                    'hostnames': [
+                        'app2',
+                    ],
+                },
+            },
+        },
+    }
+    assert expected == get_app
+
+
 def test_app_not_found(app):
     with pytest.raises(FileNotFoundError):
         app.dao.get_app(org="test-org", app="app4")
@@ -381,3 +437,26 @@ spec:
                 key2: value2
 """)
     assert expected == manifest
+
+
+def test_list_app_versions(app):
+    versions = app.dao.list_app_versions(org="test-org", app="app1")
+    assert len(versions) == 2
+    assert versions[0] == 'v0.0.*-exphost-dev'
+    assert versions[1] == "v1.2.3"
+
+
+def test_make_version(app):
+    app.dao.make_version(org="test-org", app="app1", version="v1.2.4")
+    versions = app.dao.list_app_versions(org="test-org", app="app1")
+    assert len(versions) == 3
+    assert versions[0] == 'v0.0.*-exphost-dev'
+    assert versions[1] == "v1.2.3"
+    assert versions[2] == "v1.2.4"
+
+
+def test_list_app_versions_empty(app):
+    versions = app.dao.list_app_versions(org="test-org", app="app1")
+    assert len(versions) == 2
+    assert versions[0] == 'v0.0.*-exphost-dev'
+    assert versions[1] == "v1.2.3"
